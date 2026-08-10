@@ -65,6 +65,21 @@ export function isHardLeaf(leaf: BookLeafData): boolean {
   return leaf.kind === "cover-front" || leaf.kind === "cover-back";
 }
 
+export function getChapterLabel(leaf: BookLeafData): string | null {
+  switch (leaf.kind) {
+    case "image":
+    case "text":
+    case "countdown":
+      return leaf.chapterLabel;
+    case "cover-front":
+    case "cover-back":
+    case "countdown-date":
+      return null;
+    default:
+      return assertNever(leaf);
+  }
+}
+
 export function assertNever(value: never): never {
   throw new Error(`Unhandled book leaf kind: ${JSON.stringify(value)}`);
 }

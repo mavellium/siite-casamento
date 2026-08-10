@@ -3,9 +3,11 @@ import type { ReactNode } from "react";
 export function PageChrome({
   children,
   contentClassName,
+  decor,
 }: {
   children: ReactNode;
   contentClassName?: string;
+  decor?: ReactNode;
 }) {
   return (
     <div className="leaf-chrome">
@@ -13,6 +15,7 @@ export function PageChrome({
       <span className="leaf-corner leaf-corner-tr" />
       <span className="leaf-corner leaf-corner-bl" />
       <span className="leaf-corner leaf-corner-br" />
+      {decor}
       <div className={`leaf-content ${contentClassName ?? ""}`}>{children}</div>
     </div>
   );
