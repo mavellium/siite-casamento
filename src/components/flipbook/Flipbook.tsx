@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, type ComponentProps, type ComponentType } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ComponentType,
+} from "react";
 import RawHTMLFlipBook from "react-pageflip";
 import { bookLeaves } from "@/data/book-leaves";
 import { getChapterLabel } from "@/types/book";
@@ -24,13 +32,15 @@ const HTMLFlipBook = RawHTMLFlipBook as unknown as ComponentType<
 interface PageFlipInstance {
   flipNext: (corner?: "top" | "bottom") => void;
   flipPrev: (corner?: "top" | "bottom") => void;
-  flip: (pageIndex: number, corner?: "top" | "bottom") => void;
+  turnToPage: (pageIndex: number) => void;
   getCurrentPageIndex: () => number;
   getPageCount: () => number;
 }
 interface FlipBookHandle {
   pageFlip: () => PageFlipInstance;
 }
+
+type FlippingState = "user_fold" | "fold_corner" | "flipping" | "read";
 
 interface ChapterEntry {
   label: string;
@@ -49,20 +59,67 @@ const CHAPTERS: ChapterEntry[] = bookLeaves.reduce<ChapterEntry[]>((entries, lea
 export function Flipbook() {
   const bookRef = useRef<FlipBookHandle | null>(null);
   const [pageIndex, setPageIndex] = useState(0);
+  const [isFlipping, setIsFlipping] = useState(false);
   const totalPages = bookLeaves.length;
 
   const goNext = useCallback(() => bookRef.current?.pageFlip().flipNext(), []);
   const goPrev = useCallback(() => bookRef.current?.pageFlip().flipPrev(), []);
-  const goToChapter = useCallback((index: number) => bookRef.current?.pageFlip().flip(index), []);
   const handleFlip = useCallback((e: { data: number }) => setPageIndex(e.data), []);
 
-  const activeChapterIndex = useMemo(() => {
-    let active = -1;
-    CHAPTERS.forEach((chapter, i) => {
-      if (pageIndex >= chapter.index) active = i;
-    });
-    return active;
-  }, [pageIndex]);
+  /*
+    Pular para um capítulo distante usa turnToPage (instantâneo), não flip
+    (animado): pedir pra virar página por página até um capítulo muitas
+    folhas à frente podia travar a virada no meio do caminho — sobretudo no
+    modo retrato do mobile. Um sumário de livro de verdade também pula
+    direto para o capítulo, sem folhear todas as páginas até lá.
+  */
+  const goToChapter = useCallback((index: number) => {
+    bookRef.current?.pageFlip().turnToPage(index);
+    setPageIndex(index);
+  }, []);
+
+  // Trava os controles enquanto a página está virando — antes disso, clicar
+  // duas vezes rápido numa seta/índice de capítulo podia disparar viradas
+  // sobrepostas e quebrar a animação.
+  const handleChangeState = useCallback((e: { data: FlippingState }) => {
+    setIsFlipping(e.data !== "read");
+  }, []);
+
+  useEffect(() => {
+    function handleKeydown(event: KeyboardEvent) {
+      if (isFlipping) return;
+      if (event.key === "ArrowRight") goNext();
+      else if (event.key === "ArrowLeft") goPrev();
+    }
+    window.addEventListener("keydown", handleKeydown);
+    return () => window.removeEventListener("keydown", handleKeydown);
+  }, [goNext, goPrev, isFlipping]);
+
+  /*
+    react-pageflip mostra duas folhas por vez (dupla de página). Quando o
+    capítulo alvo cai na folha da DIREITA de uma dupla (ex: III, V, VII, IX —
+    índice par, pareado com a folha ímpar anterior), .flip(index) navega
+    certo mas o evento onFlip reporta o índice da folha da ESQUERDA da
+    dupla — então nunca dá pra comparar com "pageIndex >= chapter.index".
+    Em vez disso, um capítulo está "ativo" se a sua folha é uma das duas
+    visíveis agora (pageIndex ou pageIndex + 1) — o que também deixa os
+    dois capítulos de uma dupla (ex: IV e V) acesos ao mesmo tempo, já que
+    os dois estão realmente visíveis lado a lado.
+  */
+  const activeChapters = useMemo(
+    () => CHAPTERS.filter((chapter) => chapter.index === pageIndex || chapter.index === pageIndex + 1),
+    [pageIndex]
+  );
+
+  const currentLabel = useMemo(() => {
+    if (pageIndex === 0) return "Capa";
+    if (pageIndex === totalPages - 1) return "Contracapa";
+    const exact = activeChapters.find((chapter) => chapter.index === pageIndex);
+    return (exact ?? activeChapters[0])?.label ?? `Página ${pageIndex + 1}`;
+  }, [pageIndex, totalPages, activeChapters]);
+
+  const canGoPrev = pageIndex > 0 && !isFlipping;
+  const canGoNext = pageIndex < totalPages - 1 && !isFlipping;
 
   return (
     <div className="flipbook-wrap">
@@ -70,7 +127,7 @@ export function Flipbook() {
         <button
           type="button"
           onClick={goPrev}
-          disabled={pageIndex === 0}
+          disabled={!canGoPrev}
           className="flipbook-arrow flipbook-arrow-left"
           aria-label="Página anterior"
         >
@@ -97,6 +154,7 @@ export function Flipbook() {
           style={{}}
           ref={bookRef}
           onFlip={handleFlip}
+          onChangeState={handleChangeState}
         >
           {bookLeaves.map((leaf) => (
             <LeafPage key={leaf.id} leaf={leaf} onOpenCover={goNext} />
@@ -106,7 +164,7 @@ export function Flipbook() {
         <button
           type="button"
           onClick={goNext}
-          disabled={pageIndex >= totalPages - 1}
+          disabled={!canGoNext}
           className="flipbook-arrow flipbook-arrow-right"
           aria-label="Próxima página"
         >
@@ -114,20 +172,33 @@ export function Flipbook() {
         </button>
       </div>
 
-      <nav className="chapter-index" aria-label="Capítulos do livro">
-        {CHAPTERS.map((chapter, i) => (
-          <button
-            key={chapter.label}
-            type="button"
-            className={`chapter-index-item ${i === activeChapterIndex ? "is-active" : ""}`}
-            onClick={() => goToChapter(chapter.index)}
-            aria-current={i === activeChapterIndex ? "true" : undefined}
-            title={chapter.label}
-          >
-            {chapter.shortLabel}
-          </button>
-        ))}
-      </nav>
+      <div className="flipbook-nav-footer">
+        <nav className="chapter-index" aria-label="Capítulos do livro">
+          {CHAPTERS.map((chapter) => {
+            const active = activeChapters.includes(chapter);
+            return (
+              <button
+                key={chapter.label}
+                type="button"
+                disabled={isFlipping}
+                className={`chapter-index-item ${active ? "is-active" : ""}`}
+                onClick={() => goToChapter(chapter.index)}
+                aria-current={active ? "true" : undefined}
+                title={chapter.label}
+              >
+                {chapter.shortLabel}
+              </button>
+            );
+          })}
+        </nav>
+        <p className="page-counter" aria-hidden="true">
+          {pageIndex + 1} de {totalPages}
+        </p>
+      </div>
+
+      <p className="sr-only" role="status" aria-live="polite">
+        {currentLabel}
+      </p>
     </div>
   );
 }

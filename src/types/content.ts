@@ -1,9 +1,3 @@
-export interface NavItem {
-  id: string;
-  label: string;
-  href: `#${string}`;
-}
-
 export interface EventInfoItem {
   id: string;
   label: string;

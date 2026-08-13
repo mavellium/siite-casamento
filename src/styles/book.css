@@ -61,14 +61,33 @@
   flex-direction: column;
 }
 
+.flipbook-nav-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: -1rem;
+  padding-bottom: 2rem;
+}
+
 /* Índice de capítulos do livro — pula direto para a folha daquele capítulo */
 .chapter-index {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.6rem;
-  margin-top: -1rem;
-  padding-bottom: 2rem;
+}
+
+.chapter-index-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-counter {
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(246, 240, 228, 0.5);
 }
 
 .chapter-index-item {
@@ -217,10 +236,6 @@
   pointer-events: none;
 }
 
-.leaf-hard .floral-corner {
-  opacity: 0.55;
-}
-
 .leaf-corner {
   position: absolute;
   width: 1.4rem;
@@ -262,7 +277,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /*
+    "safe center": centraliza verticalmente quando o conteúdo cabe, mas volta
+    a ancorar no topo quando não cabe. Sem o "safe", conteúdo mais alto que a
+    folha (FAQ, galeria) ficava centralizado mesmo transbordando — cortando
+    igualmente o topo (rótulo do capítulo) e o final, obrigando a rolar pra
+    cima só pra ver o começo. É o problema clássico de "centralizar sem
+    'safe'" em flexbox.
+  */
+  justify-content: safe center;
   gap: 1rem;
   padding: clamp(1.25rem, 4vw, 2.25rem);
   text-align: center;
@@ -626,4 +649,206 @@
   .countdown-grid {
     grid-template-columns: repeat(4, 1fr);
   }
+}
+
+/* Evento / Local — folhas "Cerimônia"/"Recepção"/"Como chegar" */
+.event-info-time,
+.event-info-address {
+  color: var(--sepia);
+  font-size: 0.92rem;
+}
+
+.event-info-note {
+  color: var(--sage-deep);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.location-map {
+  width: 100%;
+  height: 11rem;
+  border: 1px solid rgba(78, 93, 69, 0.2);
+}
+
+.location-map-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--sage-deep);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  background: rgba(183, 199, 163, 0.12);
+  text-align: center;
+  padding: 1rem;
+}
+
+/* FAQ — folha "Perguntas frequentes" */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.faq-item {
+  border: 1px solid rgba(169, 133, 47, 0.3);
+  padding: 0.85rem 1rem;
+}
+
+.faq-question {
+  cursor: pointer;
+  font-family: var(--font-cormorant), serif;
+  font-size: 1.05rem;
+  color: var(--sage-deep);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.faq-answer {
+  margin-top: 0.6rem;
+  color: var(--sepia);
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+
+/* RSVP — folha "Confirmação de presença" (o cartão/moldura já vem do .leaf-chrome) */
+.rsvp-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.rsvp-lede {
+  margin: 0 0 0.1rem;
+}
+
+.rsvp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  color: var(--sage-deep);
+}
+
+.rsvp-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rsvp-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rsvp-radio {
+  display: flex;
+  flex: 1 1 8rem;
+  position: relative;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: 1px solid rgba(78, 93, 69, 0.35);
+  border-radius: 999px;
+  color: var(--sepia);
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.rsvp-radio input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  text-align: center;
+}
+
+.rsvp-radio:has(input:checked) {
+  background: var(--seal);
+  border-color: var(--seal);
+  color: var(--stage-dark);
+  text-align: center;
+}
+
+.rsvp-input {
+  min-height: 44px;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid rgba(78, 93, 69, 0.3);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--sepia);
+  font-family: var(--font-eb), serif;
+  font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rsvp-input:focus-visible {
+  outline: none;
+  border-color: var(--seal);
+  box-shadow: 0 0 0 3px rgba(169, 133, 47, 0.2);
+}
+
+.rsvp-textarea {
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
+.rsvp-button {
+  min-height: 44px;
+  padding: 0.85rem 1.6rem;
+  border: none;
+  background: var(--seal);
+  color: var(--stage-dark);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  align-self: center;
+  transition: transform 0.2s ease;
+}
+
+.rsvp-button:hover {
+  transform: translateY(-2px);
+}
+
+.rsvp-confirmation {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.rsvp-confirmation-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--seal);
+}
+
+/* Galeria — folha "Galeria" */
+.gallery-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  width: 100%;
+}
+
+.gallery-item {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  text-align: center;
+}
+
+.gallery-image {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border: 1px solid rgba(78, 93, 69, 0.2);
 }

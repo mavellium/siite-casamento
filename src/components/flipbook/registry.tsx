@@ -5,6 +5,11 @@ import { ImagePage } from "./pages/ImagePage";
 import { TextPage } from "./pages/TextPage";
 import { CountdownDatePage } from "./pages/CountdownDatePage";
 import { CountdownPage } from "./pages/CountdownPage";
+import { EventInfoPage } from "./pages/EventInfoPage";
+import { LocationPage } from "./pages/LocationPage";
+import { FaqPage } from "./pages/FaqPage";
+import { RsvpPage } from "./pages/RsvpPage";
+import { GalleryPage } from "./pages/GalleryPage";
 
 export function renderLeafContent(leaf: BookLeafData, onOpenCover?: () => void) {
   switch (leaf.kind) {
@@ -20,6 +25,16 @@ export function renderLeafContent(leaf: BookLeafData, onOpenCover?: () => void) 
       return <CountdownDatePage leaf={leaf} />;
     case "countdown":
       return <CountdownPage leaf={leaf} />;
+    case "event-info":
+      return <EventInfoPage leaf={leaf} />;
+    case "location":
+      return <LocationPage leaf={leaf} />;
+    case "faq":
+      return <FaqPage leaf={leaf} />;
+    case "rsvp":
+      return <RsvpPage leaf={leaf} />;
+    case "gallery":
+      return <GalleryPage leaf={leaf} />;
     default:
       return assertNever(leaf);
   }

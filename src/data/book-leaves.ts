@@ -1,6 +1,10 @@
 import type { BookLeafData } from "@/types/book";
 import { COUPLE_MONOGRAM, COUPLE_NAMES, WEDDING_DATE_ISO } from "@/data/site-config";
 import { formatEventDateLabel } from "@/lib/date";
+import { EVENT_INFO } from "@/data/event-info";
+import { LOCATION } from "@/data/location";
+import { FAQ_ITEMS } from "@/data/faq";
+import { GALLERY_IMAGES } from "@/data/gallery";
 
 export const bookLeaves: BookLeafData[] = [
   {
@@ -64,6 +68,43 @@ export const bookLeaves: BookLeafData[] = [
     description:
       "Enquanto a última página não chega, contamos cada instante que nos aproxima do dia em que nossas histórias se tornam uma só.",
     targetIso: WEDDING_DATE_ISO,
+  },
+  ...EVENT_INFO.map(
+    (item): BookLeafData => ({
+      id: item.id,
+      kind: "event-info",
+      chapterLabel: item.label,
+      title: item.title,
+      time: item.time,
+      address: item.address,
+      note: item.note,
+    })
+  ),
+  {
+    id: "location",
+    kind: "location",
+    chapterLabel: "Capítulo VI",
+    venueName: LOCATION.venueName,
+    address: LOCATION.address,
+    howToArrive: LOCATION.howToArrive,
+    mapEmbedUrl: LOCATION.mapEmbedUrl || undefined,
+  },
+  {
+    id: "faq",
+    kind: "faq",
+    chapterLabel: "Capítulo VII",
+    items: FAQ_ITEMS,
+  },
+  {
+    id: "rsvp",
+    kind: "rsvp",
+    chapterLabel: "Capítulo VIII",
+  },
+  {
+    id: "gallery",
+    kind: "gallery",
+    chapterLabel: "Capítulo IX",
+    images: GALLERY_IMAGES,
   },
   {
     id: "cover-back",

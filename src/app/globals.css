@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @import "../styles/book.css";
 @import "../styles/texture.css";
-@import "../styles/sections.css";
 
 :root {
   --rose-blush: #F9E4E8;
@@ -11,10 +10,6 @@
   --parchment: #F6F0E4;
   --seal: #A9852F;
   --stage-dark: #241f1b;
-}
-
-html {
-  scroll-behavior: smooth;
 }
 
 body {

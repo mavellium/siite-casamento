@@ -52,13 +52,53 @@ export interface CountdownLeaf extends BookLeafBase {
   targetIso: string;
 }
 
+export interface EventInfoLeaf extends BookLeafBase {
+  kind: "event-info";
+  chapterLabel: string;
+  title: string;
+  time: string;
+  address: string;
+  note?: string;
+}
+
+export interface LocationLeaf extends BookLeafBase {
+  kind: "location";
+  chapterLabel: string;
+  venueName: string;
+  address: string;
+  howToArrive: string;
+  mapEmbedUrl?: string;
+}
+
+export interface FaqLeaf extends BookLeafBase {
+  kind: "faq";
+  chapterLabel: string;
+  items: { id: string; question: string; answer: string }[];
+}
+
+export interface RsvpLeaf extends BookLeafBase {
+  kind: "rsvp";
+  chapterLabel: string;
+}
+
+export interface GalleryLeaf extends BookLeafBase {
+  kind: "gallery";
+  chapterLabel: string;
+  images: { src: string; alt: string; caption?: string }[];
+}
+
 export type BookLeafData =
   | CoverFrontLeaf
   | CoverBackLeaf
   | ImageLeaf
   | TextLeaf
   | CountdownDateLeaf
-  | CountdownLeaf;
+  | CountdownLeaf
+  | EventInfoLeaf
+  | LocationLeaf
+  | FaqLeaf
+  | RsvpLeaf
+  | GalleryLeaf;
 
 /** true para as capas (mais rígidas, não dobram como papel) */
 export function isHardLeaf(leaf: BookLeafData): boolean {
@@ -70,6 +110,11 @@ export function getChapterLabel(leaf: BookLeafData): string | null {
     case "image":
     case "text":
     case "countdown":
+    case "event-info":
+    case "location":
+    case "faq":
+    case "rsvp":
+    case "gallery":
       return leaf.chapterLabel;
     case "cover-front":
     case "cover-back":
