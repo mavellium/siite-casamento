@@ -6,7 +6,8 @@ export function LocationPage({ leaf }: { leaf: LocationLeaf }) {
     <PageChrome contentClassName="leaf-content-text">
       <span className="chapter-label">{leaf.chapterLabel}</span>
       <OrnamentDivider />
-      <h2 className="page-heading">{leaf.venueName}</h2>
+      <h2 className="page-heading">{leaf.title}</h2>
+      <p className="event-info-time">{leaf.venueName}</p>
       <p className="event-info-address">{leaf.address}</p>
       <p className="page-text">{leaf.howToArrive}</p>
       {leaf.mapEmbedUrl ? (

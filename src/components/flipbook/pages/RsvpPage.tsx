@@ -44,7 +44,7 @@ export function RsvpPage({ leaf }: { leaf: RsvpLeaf }) {
     <PageChrome contentClassName="leaf-content-text">
       <span className="chapter-label">{leaf.chapterLabel}</span>
       <OrnamentDivider />
-      <h2 className="page-heading">Confirmação de presença</h2>
+      <h2 className="page-heading">{leaf.title}</h2>
       <form className="rsvp-form" onSubmit={handleSubmit}>
         <p className="page-text rsvp-lede">
           Sua presença é a próxima linha desta história. Conte para nós se poderá celebrar esse

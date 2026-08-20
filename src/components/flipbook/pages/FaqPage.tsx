@@ -6,6 +6,7 @@ export function FaqPage({ leaf }: { leaf: FaqLeaf }) {
     <PageChrome contentClassName="leaf-content-text">
       <span className="chapter-label">{leaf.chapterLabel}</span>
       <OrnamentDivider />
+      <h2 className="page-heading">{leaf.title}</h2>
       <div className="faq-list">
         {leaf.items.map((item) => (
           <details key={item.id} className="faq-item">

@@ -64,6 +64,7 @@ export interface EventInfoLeaf extends BookLeafBase {
 export interface LocationLeaf extends BookLeafBase {
   kind: "location";
   chapterLabel: string;
+  title: string;
   venueName: string;
   address: string;
   howToArrive: string;
@@ -73,17 +74,20 @@ export interface LocationLeaf extends BookLeafBase {
 export interface FaqLeaf extends BookLeafBase {
   kind: "faq";
   chapterLabel: string;
+  title: string;
   items: { id: string; question: string; answer: string }[];
 }
 
 export interface RsvpLeaf extends BookLeafBase {
   kind: "rsvp";
   chapterLabel: string;
+  title: string;
 }
 
 export interface GalleryLeaf extends BookLeafBase {
   kind: "gallery";
   chapterLabel: string;
+  title: string;
   images: { src: string; alt: string; caption?: string }[];
 }
 
@@ -116,6 +120,27 @@ export function getChapterLabel(leaf: BookLeafData): string | null {
     case "rsvp":
     case "gallery":
       return leaf.chapterLabel;
+    case "cover-front":
+    case "cover-back":
+    case "countdown-date":
+      return null;
+    default:
+      return assertNever(leaf);
+  }
+}
+
+/** título legível do capítulo (para o sumário) — null quando a folha não carrega um título próprio */
+export function getLeafTitle(leaf: BookLeafData): string | null {
+  switch (leaf.kind) {
+    case "text":
+    case "countdown":
+    case "event-info":
+    case "location":
+    case "faq":
+    case "rsvp":
+    case "gallery":
+      return leaf.title;
+    case "image":
     case "cover-front":
     case "cover-back":
     case "countdown-date":

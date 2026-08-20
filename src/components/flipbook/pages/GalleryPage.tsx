@@ -6,6 +6,7 @@ export function GalleryPage({ leaf }: { leaf: GalleryLeaf }) {
     <PageChrome>
       <span className="chapter-label">{leaf.chapterLabel}</span>
       <OrnamentDivider />
+      <h2 className="page-heading">{leaf.title}</h2>
       <div className="gallery-grid">
         {leaf.images.map((image) => (
           <figure key={image.src} className="gallery-item">
