@@ -128,7 +128,7 @@
   min-height: 44px;
   padding: 0.5rem 1.1rem;
   border-radius: 999px;
-  border: 1px solid rgba(169, 133, 47, 0.4);
+  border: 1px solid rgba(var(--seal-rgb), 0.4);
   background: rgba(246, 240, 228, 0.06);
   color: var(--seal);
   font-family: var(--font-cormorant), serif;
@@ -163,7 +163,7 @@
   max-height: 85dvh;
   overflow-y: auto;
   background: var(--parchment);
-  border: 1px solid rgba(169, 133, 47, 0.55);
+  border: 1px solid rgba(var(--seal-rgb), 0.55);
   padding: clamp(1.75rem, 5vw, 2.5rem);
   display: flex;
   flex-direction: column;
@@ -188,14 +188,14 @@
   min-width: 44px;
   min-height: 44px;
   border-radius: 999px;
-  border: 1px solid rgba(169, 133, 47, 0.35);
+  border: 1px solid rgba(var(--seal-rgb), 0.35);
   color: var(--seal);
   background: transparent;
   transition: background 0.2s ease;
 }
 
 .toc-close:hover {
-  background: rgba(169, 133, 47, 0.14);
+  background: rgba(var(--seal-rgb), 0.14);
 }
 
 .toc-list {
@@ -213,7 +213,7 @@
   min-height: 44px;
   padding: 0.6rem 0.25rem;
   color: var(--sepia);
-  border-bottom: 1px dotted rgba(78, 93, 69, 0.25);
+  border-bottom: 1px dotted rgba(var(--sage-deep-rgb), 0.25);
   text-align: left;
   transition: color 0.2s ease;
 }
@@ -240,7 +240,7 @@
   flex: none;
   font-size: 0.7rem;
   letter-spacing: 0.08em;
-  color: rgba(67, 57, 46, 0.55);
+  color: rgba(var(--sepia-rgb), 0.55);
 }
 
 .toc-item.is-active .toc-item-title {
@@ -295,6 +295,101 @@
   justify-content: center;
 }
 
+/*
+  Com showCover, capa e contracapa aparecem SOZINHAS numa dupla de página
+  landscape — react-pageflip sempre desenha um quadro de 2 páginas de
+  largura nesse modo, mas uma folha "solta" só ocupa metade dele (a capa na
+  metade direita, a contracapa na esquerda), deixando a outra metade em
+  branco. Sem ajuste, a capa/contracapa fica colada numa borda do livro em
+  vez de centralizada na tela.
+
+  Duas tentativas anteriores nesta mesma sessão deslocavam o .stf__wrapper
+  INTEIRO (transform no wrapper, ligado por is-front-cover/is-back-cover em
+  Flipbook.tsx) — e as duas quebravam de formas diferentes:
+
+  1ª tentativa (deslocamento sempre ligado enquanto pageIndex indicasse
+  capa): como react-pageflip só atualiza pageIndex no FIM da animação de
+  virada (page-flip/src/Flip/Flip.ts, animateFlippingTo — turnToNextPage só
+  roda dentro do callback de conclusão), is-front-cover ficava "grudado" por
+  todo o ~700ms de quem SAI de uma capa — deslocando também a dupla de
+  página cheia de destino, que já estava sendo revelada por baixo (sem ser
+  folha solta, não devia ter deslocamento nenhum), cortando/descentralizando
+  ela até a virada terminar.
+
+  2ª tentativa (:not(.is-flipping-near-cover), suspendendo o deslocamento
+  durante a virada): resolvia o corte acima, mas criava um "pulo" visível
+  bem no instante em que a virada começa/termina — porque a capa, ao virar,
+  é desenhada pela própria lib (HTMLPage.drawHard, density hard) ancorada no
+  CENTRO REAL do quadro (rect.left + rect.width/2, a lombada) via transform
+  próprio, isolado do nosso deslocamento; um transform num ancestral (o
+  wrapper) muda só a PINTURA, não o rect medido pela lib, então nossa
+  correção "some" de uma vez assim que a lib assume o posicionamento —
+  gerando descontinuidade entre "estático corrigido" e "virando, sem
+  correção".
+
+  Fix atual: em vez de deslocar o WRAPPER (que afeta todo mundo dentro,
+  inclusive a dupla de destino), desloca só o ITEM da capa/contracapa em si
+  (.stf__item, o elemento que a lib var a cada leaf). HTMLPage.simpleDraw
+  (usado pra páginas estáticas, ver page-flip/src/Page/HTMLPage.ts) nunca
+  seta a propriedade `transform` no cssText — só left/top/width/height —
+  então nosso transform via classe CONTINUA valendo (cascata normal) sempre
+  que o item está parado. Quando esse mesmo item vira a página "flipando",
+  drawHard/drawSoft passam a setar `transform` inline a cada frame, que
+  automaticamente TOMA PRECEDÊNCIA sobre a nossa regra — sem precisarmos
+  desligar nada por classe/estado. Resultado: a dupla de destino nunca é
+  tocada (não existe mais o corte), e a capa/contracapa correndo através
+  do próprio motor da lib fica exatamente como a lib desenha (mesmo
+  comportamento de antes de qualquer correção nossa) — sem o salto abrupto
+  de estar "corrigida" um instante e "sem correção" no instante seguinte.
+
+  :first-child pega a capa (sempre a 1ª folha). Pra contracapa (sempre a
+  ÚLTIMA folha) não dá pra usar :last-child: a própria lib acrescenta 4
+  elementos de sombra (.stf__outerShadow/.innerShadow/.hardShadow/
+  .hardInnerShadow, ver HTMLRender.ts createShadows) como irmãos DEPOIS de
+  todos os .stf__item — então o último filho de verdade é uma sombra, não a
+  contracapa. :nth-last-child(5) pula esses 4 pra pegar o último .stf__item
+  de fato (confirmado via inspeção do DOM em runtime).
+
+  50% (não 25%) da largura do PRÓPRIO item: antes, 25% era relativo à
+  largura do WRAPPER inteiro (2 páginas), o que dava meia página de
+  deslocamento. Aplicado direto no item (1 página de largura), a MESMA meia
+  página agora é 50% da largura dele. Só faz sentido em --landscape: no
+  retrato cada folha já é uma dupla de 1 página só, sempre cheia.
+
+  .--hard é obrigatório: no modo startOpen (Flipbook.tsx), capa/contracapa
+  são tiradas do array e showCover vira false — nesse caso o 1º/último
+  ITEM DE CONTEÚDO ainda é :first-child/:nth-last-child(5) estruturalmente,
+  mas é uma folha PAREADA normal (density --soft), não mais solteira. Sem
+  filtrar por .--hard, essa regra deslocava a primeira/última folha de
+  conteúdo pra fora da tela (-50%/+50%) enquanto a folha parceira dela
+  ficava no lugar certo — as duas pareciam "separadas". PageCollection só
+  marca uma folha como PageDensity.HARD quando ela é de fato solteira
+  (createSpread, showCover ou sobra ímpar no fim) — nunca numa dupla normal
+  — então filtrar por essa classe restringe o deslocamento só pra quando
+  realmente existe uma capa/contracapa solta pra recentralizar.
+*/
+.stf__wrapper.--landscape .stf__item.--hard:first-child {
+  transform: translateX(-50%);
+}
+.stf__wrapper.--landscape .stf__item.--hard:nth-last-child(5) {
+  transform: translateX(50%);
+}
+
+/*
+  Ao virar de/para a capa ou contracapa (dupla-solteira), a sombra de vinco
+  da lib (hardShadow/hardInnerShadow) é desenhada na posição de uma folha
+  que não existe mais nessa dupla, sobrando um retângulo fantasma sobre o
+  fundo do palco durante a virada — ver .is-flipping-near-cover em
+  Flipbook.tsx. !important porque a lib substitui o style inteiro desses
+  elementos (incluindo display:block) a cada frame da animação via JS.
+*/
+.is-flipping-near-cover .stf__outerShadow,
+.is-flipping-near-cover .stf__innerShadow,
+.is-flipping-near-cover .stf__hardShadow,
+.is-flipping-near-cover .stf__hardInnerShadow {
+  display: none !important;
+}
+
 .flipbook-arrow {
   flex: none;
   display: inline-flex;
@@ -303,7 +398,7 @@
   width: 3rem;
   height: 3rem;
   border-radius: 999px;
-  border: 1px solid rgba(169, 133, 47, 0.35);
+  border: 1px solid rgba(var(--seal-rgb), 0.35);
   background: rgba(246, 240, 228, 0.06);
   color: var(--seal);
   font-size: 1.6rem;
@@ -325,7 +420,7 @@
 }
 
 .flipbook-arrow:hover:not(:disabled) {
-  background: rgba(169, 133, 47, 0.16);
+  background: rgba(var(--seal-rgb), 0.16);
   transform: scale(1.05);
 }
 
@@ -380,14 +475,14 @@
   position: relative;
   height: 100%;
   margin: 1.1rem;
-  border: 1px solid rgba(169, 133, 47, 0.55);
+  border: 1px solid rgba(var(--seal-rgb), 0.55);
   display: flex;
 }
 
 .leaf-hard .leaf-chrome {
   margin: 1.6rem;
   border-width: 1px;
-  border-color: rgba(169, 133, 47, 0.75);
+  border-color: rgba(var(--seal-rgb), 0.75);
   background: radial-gradient(
       circle at 50% 38%,
       rgba(255, 255, 255, 0.34),
@@ -406,7 +501,7 @@
   content: "";
   position: absolute;
   inset: 0.65rem;
-  border: 1px solid rgba(169, 133, 47, 0.4);
+  border: 1px solid rgba(var(--seal-rgb), 0.4);
   pointer-events: none;
 }
 
@@ -487,7 +582,7 @@
 .leaf-divider-line {
   flex: 1;
   height: 1px;
-  background: rgba(169, 133, 47, 0.45);
+  background: rgba(var(--seal-rgb), 0.45);
 }
 
 .leaf-divider-glyph {
@@ -500,8 +595,8 @@
   aspect-ratio: 3 / 4;
   border-radius: 0.25rem;
   overflow: hidden;
-  border: 1px solid rgba(78, 93, 69, 0.18);
-  box-shadow: 0 18px 35px rgba(67, 57, 46, 0.18);
+  border: 1px solid rgba(var(--sage-deep-rgb), 0.18);
+  box-shadow: 0 18px 35px rgba(var(--sepia-rgb), 0.18);
 }
 
 .leaf-image {
@@ -717,17 +812,17 @@
   width: clamp(3rem, 18cqw, 5.5rem);
   height: clamp(3rem, 18cqw, 5.5rem);
   border-radius: 46% 54% 52% 48% / 52% 48% 54% 46%;
-  background: radial-gradient(circle at 32% 28%, rgba(255, 226, 163, 0.98), rgba(169, 133, 47, 1) 65%, rgba(133, 101, 33, 1));
+  background: radial-gradient(circle at 32% 28%, rgba(255, 226, 163, 0.98), rgba(var(--seal-rgb), 1) 65%, rgba(133, 101, 33, 1));
   color: rgba(255, 250, 235, 0.95);
   font-family: var(--font-cormorant), serif;
   font-size: clamp(0.8rem, 4cqw, 1.1rem);
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  text-shadow: 0 1px 1px rgba(67, 57, 46, 0.35);
+  text-shadow: 0 1px 1px rgba(var(--sepia-rgb), 0.35);
   transform: rotate(-4deg);
   box-shadow:
     inset 0 2px 3px rgba(255, 255, 255, 0.4),
-    inset 0 -4px 6px rgba(67, 57, 46, 0.35),
+    inset 0 -4px 6px rgba(var(--sepia-rgb), 0.35),
     0 14px 24px rgba(0, 0, 0, 0.32),
     0 2px 4px rgba(0, 0, 0, 0.25);
   transition: transform 0.2s ease;
@@ -849,7 +944,7 @@
 .location-map {
   width: 100%;
   height: 11rem;
-  border: 1px solid rgba(78, 93, 69, 0.2);
+  border: 1px solid rgba(var(--sage-deep-rgb), 0.2);
 }
 
 .location-map-placeholder {
@@ -873,7 +968,7 @@
 }
 
 .faq-item {
-  border: 1px solid rgba(169, 133, 47, 0.3);
+  border: 1px solid rgba(var(--seal-rgb), 0.3);
   padding: 0.85rem 1rem;
 }
 
@@ -946,7 +1041,7 @@
   min-height: 44px;
   padding: 0 0.5rem;
   font-size: 0.85rem;
-  border: 1px solid rgba(78, 93, 69, 0.35);
+  border: 1px solid rgba(var(--sage-deep-rgb), 0.35);
   border-radius: 999px;
   color: var(--sepia);
   text-align: center;
@@ -971,7 +1066,7 @@
 .rsvp-input {
   min-height: 44px;
   padding: 0.6rem 0.9rem;
-  border: 1px solid rgba(78, 93, 69, 0.3);
+  border: 1px solid rgba(var(--sage-deep-rgb), 0.3);
   background: rgba(255, 255, 255, 0.6);
   color: var(--sepia);
   font-family: var(--font-eb), serif;
@@ -982,7 +1077,7 @@
 .rsvp-input:focus-visible {
   outline: none;
   border-color: var(--seal);
-  box-shadow: 0 0 0 3px rgba(169, 133, 47, 0.2);
+  box-shadow: 0 0 0 3px rgba(var(--seal-rgb), 0.2);
 }
 
 .rsvp-textarea {
@@ -1047,5 +1142,5 @@
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
-  border: 1px solid rgba(78, 93, 69, 0.2);
+  border: 1px solid rgba(var(--sage-deep-rgb), 0.2);
 }

@@ -1,0 +1,69 @@
+/*
+  Introdução 3D com câmera controlada por scroll (ver src/components/intro3d/).
+  Estrutura: .intro3d-spacer é o que dá altura rolável (o percurso inteiro:
+  câmera se aproximando + capa abrindo); .intro3d-stage fica "grudado" no
+  topo da viewport (position:sticky) enquanto o spacer rola por trás dele —
+  é essa técnica CSS que faz o palco 3D parecer "parado" durante o scroll,
+  sem precisar do mecanismo de pin em JS do ScrollTrigger.
+*/
+
+.intro3d-placeholder {
+  min-height: 100dvh;
+  background: var(--stage-dark);
+}
+
+.intro-gate {
+  position: relative;
+}
+
+.intro3d-spacer {
+  position: relative;
+  height: 400vh;
+}
+
+.intro3d-stage {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+  background: var(--stage-dark);
+}
+
+.intro3d-stage canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/*
+  O canvas 3D nunca desmonta (custo de frame quase zero parado, via
+  frameloop="demand" no Canvas) — só esmaece, pra reaparecer na hora se o
+  usuário rolar de volta pra dentro da capa. O livro 2D é quem monta/
+  desmonta de fato na travessia do limiar (ver IntroGate) e fica sobreposto
+  fixo na viewport enquanto visível, sem interferir na posição real de
+  scroll (que continua sendo medida através do spacer por baixo).
+*/
+.intro-gate-3d {
+  position: relative;
+  z-index: 1;
+  opacity: 1;
+  transition: opacity 0.4s ease;
+}
+.intro-gate-3d.is-faded {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.intro-gate-2d {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.intro-gate-2d.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}

@@ -1,5 +1,5 @@
-import { Flipbook } from "@/components/flipbook/Flipbook";
+import { IntroGate } from "@/components/intro3d/IntroGate";
 
 export default function Home() {
-  return <Flipbook />;
+  return <IntroGate />;
 }
