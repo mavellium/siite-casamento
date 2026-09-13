@@ -1,4 +1,5 @@
 import type { GalleryLeaf } from "@/types/book";
+import { GalleryGrid } from "@/components/sections/GalleryGrid";
 import { PageChrome, OrnamentDivider } from "../PageChrome";
 
 export function GalleryPage({ leaf }: { leaf: GalleryLeaf }) {
@@ -7,15 +8,7 @@ export function GalleryPage({ leaf }: { leaf: GalleryLeaf }) {
       <span className="chapter-label">{leaf.chapterLabel}</span>
       <OrnamentDivider />
       <h2 className="page-heading">{leaf.title}</h2>
-      <div className="gallery-grid">
-        {leaf.images.map((image) => (
-          <figure key={image.src} className="gallery-item">
-            {/* eslint-disable-next-line @next/next/no-img-element -- fotos remotas de placeholder, ver TODO em gallery.ts */}
-            <img src={image.src} alt={image.alt} className="gallery-image" />
-            {image.caption && <figcaption className="leaf-caption">{image.caption}</figcaption>}
-          </figure>
-        ))}
-      </div>
+      <GalleryGrid images={leaf.images} />
     </PageChrome>
   );
 }

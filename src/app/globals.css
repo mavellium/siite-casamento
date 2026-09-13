@@ -2,6 +2,7 @@
 @import "../styles/book.css";
 @import "../styles/texture.css";
 @import "../styles/intro3d.css";
+@import "../styles/sections.css";
 
 :root {
   --rose-blush: #F9E4E8;

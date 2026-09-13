@@ -1,35 +1,15 @@
-"use client";
-
 import type { CountdownLeaf } from "@/types/book";
-import { useCountdown } from "@/hooks/useCountdown";
+import { CountdownDisplay } from "@/components/sections/CountdownDisplay";
 import { PageChrome, OrnamentDivider } from "../PageChrome";
 
-const TILES: Array<{ key: "days" | "hours" | "minutes" | "seconds"; label: string }> = [
-  { key: "days", label: "dias" },
-  { key: "hours", label: "horas" },
-  { key: "minutes", label: "minutos" },
-  { key: "seconds", label: "segundos" },
-];
-
 export function CountdownPage({ leaf }: { leaf: CountdownLeaf }) {
-  const parts = useCountdown(leaf.targetIso);
-
   return (
     <PageChrome>
       <span className="chapter-label">{leaf.chapterLabel}</span>
       <OrnamentDivider />
       <h2 className="page-heading">{leaf.title}</h2>
       {leaf.description && <p className="page-text">{leaf.description}</p>}
-      <div className="countdown-grid">
-        {TILES.map((tile) => (
-          <div key={tile.key} className="countdown-tile">
-            <span className="countdown-value">
-              {parts ? String(parts[tile.key]).padStart(2, "0") : "--"}
-            </span>
-            <span className="countdown-label">{tile.label}</span>
-          </div>
-        ))}
-      </div>
+      <CountdownDisplay targetIso={leaf.targetIso} />
     </PageChrome>
   );
 }

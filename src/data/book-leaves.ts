@@ -1,10 +1,13 @@
 import type { BookLeafData } from "@/types/book";
 import { COUPLE_MONOGRAM, COUPLE_NAMES, WEDDING_DATE_ISO } from "@/data/site-config";
 import { formatEventDateLabel } from "@/lib/date";
+import { STORY_SECTIONS } from "@/data/story";
 import { EVENT_INFO } from "@/data/event-info";
 import { LOCATION } from "@/data/location";
 import { FAQ_ITEMS } from "@/data/faq";
 import { GALLERY_IMAGES } from "@/data/gallery";
+
+const CHAPTER_NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI"];
 
 export const bookLeaves: BookLeafData[] = [
   {
@@ -17,44 +20,18 @@ export const bookLeaves: BookLeafData[] = [
     instruction: "toque no lacre para abrir",
     footer: formatEventDateLabel(WEDDING_DATE_ISO),
   },
-  {
-    id: "chapter-1-image",
-    kind: "image",
-    chapterLabel: "Capítulo I",
-    image: {
-      src: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
-      alt: "Página de abertura da história do casal",
-    },
-    caption: "sálvia · começo",
-  },
-  {
-    id: "chapter-1-text",
-    kind: "text",
-    chapterLabel: "Capítulo I",
-    title: "Uma página que se abre",
-    content:
-      "Nossa história nunca foi escrita em pressa. Foi rascunhada nos detalhes, nas tardes de silêncio compartilhado e no brilho de um olhar que reconheceu, no outro, o seu lar. Convidamos você a testemunhar o momento em que as nossas páginas se tornam uma só — e a virar, com delicadeza, cada folha que nos trouxe até aqui.",
-    signature: COUPLE_NAMES,
-  },
-  {
-    id: "chapter-2-image",
-    kind: "image",
-    chapterLabel: "Capítulo II",
-    image: {
-      src: "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?q=80&w=1200&auto=format&fit=crop",
-      alt: "Jardim florido representando o próximo capítulo da história",
-    },
-    caption: "blush · jardim",
-  },
-  {
-    id: "chapter-2-text",
-    kind: "text",
-    chapterLabel: "Capítulo II",
-    title: "O próximo capítulo",
-    content:
-      "A cada página virada, é como se nosso romance ganhasse uma nova margem. Um jardim de memórias floridas, cartas trocadas e pequenos gestos que nos convidam a seguir adiante juntos. Estamos abrindo mais um trecho para você ler e celebrar conosco.",
-    signature: formatEventDateLabel(WEDDING_DATE_ISO),
-  },
+  // Capítulos I-IV: história do casal — mesmo conteúdo/estrutura usado no
+  // objeto "Livro" da mesa 3D (ver src/data/story.ts), só que aqui
+  // paginado como folhas de livro pro fallback reduced-motion.
+  ...STORY_SECTIONS.map(
+    (section, i): BookLeafData => ({
+      id: section.id,
+      kind: "text",
+      chapterLabel: `Capítulo ${CHAPTER_NUMERALS[i]}`,
+      title: section.title,
+      content: section.content,
+    })
+  ),
   {
     id: "countdown-date",
     kind: "countdown-date",
@@ -63,7 +40,7 @@ export const bookLeaves: BookLeafData[] = [
   {
     id: "countdown",
     kind: "countdown",
-    chapterLabel: "Capítulo III",
+    chapterLabel: `Capítulo ${CHAPTER_NUMERALS[4]}`,
     title: "A contagem regressiva",
     description:
       "Enquanto a última página não chega, contamos cada instante que nos aproxima do dia em que nossas histórias se tornam uma só.",
@@ -83,7 +60,7 @@ export const bookLeaves: BookLeafData[] = [
   {
     id: "location",
     kind: "location",
-    chapterLabel: "Capítulo VI",
+    chapterLabel: `Capítulo ${CHAPTER_NUMERALS[7]}`,
     title: "Como chegar",
     venueName: LOCATION.venueName,
     address: LOCATION.address,
@@ -93,35 +70,35 @@ export const bookLeaves: BookLeafData[] = [
   {
     id: "faq-1",
     kind: "faq",
-    chapterLabel: "Capítulo VII",
+    chapterLabel: `Capítulo ${CHAPTER_NUMERALS[8]}`,
     title: "Perguntas frequentes",
     items: FAQ_ITEMS.slice(0, 3),
   },
   {
     id: "faq-2",
     kind: "faq",
-    chapterLabel: "Capítulo VII",
+    chapterLabel: `Capítulo ${CHAPTER_NUMERALS[8]}`,
     title: "Perguntas frequentes",
     items: FAQ_ITEMS.slice(3),
   },
   {
     id: "rsvp",
     kind: "rsvp",
-    chapterLabel: "Capítulo VIII",
+    chapterLabel: `Capítulo ${CHAPTER_NUMERALS[9]}`,
     title: "Confirmação de presença",
   },
   {
     id: "gallery-1",
     kind: "gallery",
-    chapterLabel: "Capítulo IX",
-    title: "Galeria",
+    chapterLabel: `Capítulo ${CHAPTER_NUMERALS[10]}`,
+    title: "Banco de Imagens",
     images: GALLERY_IMAGES.slice(0, 3),
   },
   {
     id: "gallery-2",
     kind: "gallery",
-    chapterLabel: "Capítulo IX",
-    title: "Galeria",
+    chapterLabel: `Capítulo ${CHAPTER_NUMERALS[10]}`,
+    title: "Banco de Imagens",
     images: GALLERY_IMAGES.slice(3),
   },
   {

@@ -1,44 +1,27 @@
 "use client";
 
-import { useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useMemo } from "react";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { PALETTE } from "./palette";
-import { BOOK_CENTER, BOOK_DEPTH, BOOK_SPINE, BOOK_WIDTH, TABLE_TOP_Y } from "./cameraKeyframes";
-import { CAMERA_PROGRESS_END } from "./CameraRig";
-import type { ProgressRef } from "./progress";
-
-const MAX_OPEN_ANGLE = Math.PI * 0.86; // ~155°, não bate 180° pra continuar legível de cima
-
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3);
-}
+import { BOOK_DEPTH, BOOK_WIDTH } from "./cameraKeyframes";
 
 /**
- * Livro fechado (bloco de páginas + capa numa dobradiça pivotada na
- * lombada) cuja abertura é dirigida pela MESMA progressRef que move a
- * câmera (CameraRig) — de CAMERA_PROGRESS_END até 1 do progresso geral.
- * Usar a mesma variável (em vez de um timeline à parte) é o que garante a
- * reversibilidade: scrubar pra trás fecha a capa automaticamente, sem
- * lógica extra de "desfazer".
- *
- * A sombra de contato da lombada (plano com gradiente radial) é
- * escalada/esmaecida pelo mesmo hingeProgress que gira a capa — nunca
- * pode desalinhar porque é a mesma variável, e permite o efeito pedido
- * (mais escura/apertada perto da lombada, suave conforme a capa levanta)
- * que um mapa de sombra genérico não garante sozinho.
+ * Livro fechado (bloco de páginas + capa), pousado na mesa como um dos
+ * objetos clicáveis do menu — não abre mais sozinho via scroll (ver
+ * SectionOverlay: clicar no objeto "Livro" abre o Flipbook de página-
+ * virando de sempre em tela cheia, sem flourish de abertura por
+ * enquanto). Todas as coordenadas aqui são
+ * LOCAIS ao grupo pai (fornecido por InteractiveObject, posicionado em
+ * BOOK_CENTER) — não mais absolutas de mundo como antes, quando este
+ * componente não tinha pai posicionado.
  */
-export function BookMesh({ progressRef }: { progressRef: ProgressRef }) {
-  const hingeRef = useRef<THREE.Group>(null);
-  const shadowRef = useRef<THREE.Mesh>(null);
-  const shadowMaterialRef = useRef<THREE.MeshBasicMaterial>(null);
-
+export function BookMesh() {
   // Mesma profundidade (BOOK_DEPTH) da capa fechada — senão o bloco de
-  // páginas "vaza" por baixo da capa mesmo com o livro fechado, quebrando a
-  // leitura de "fechado = um retângulo sólido só" visto de cima. Capa um
-  // pouco mais "alta" (BOOK_DEPTH+0.04) que o bloco de páginas só pra dar
-  // uma pequena borda visível nas bordas de cima/baixo.
+  // páginas "vaza" por baixo da capa, quebrando a leitura de "fechado = um
+  // retângulo sólido só" visto de cima. Capa um pouco mais "alta"
+  // (BOOK_DEPTH+0.04) que o bloco de páginas só pra dar uma pequena borda
+  // visível nas bordas de cima/baixo.
   const pageBlockGeometry = useMemo(() => new RoundedBoxGeometry(BOOK_WIDTH, 0.12, BOOK_DEPTH, 2, 0.02), []);
   const coverGeometry = useMemo(
     () => new RoundedBoxGeometry(BOOK_WIDTH, 0.06, BOOK_DEPTH + 0.04, 2, 0.03),
@@ -46,38 +29,15 @@ export function BookMesh({ progressRef }: { progressRef: ProgressRef }) {
   );
   const shadowTexture = useMemo(() => createRadialShadowTexture(), []);
 
-  useFrame(() => {
-    const overall = progressRef.current;
-    const hinge = THREE.MathUtils.clamp((overall - CAMERA_PROGRESS_END) / (1 - CAMERA_PROGRESS_END), 0, 1);
-    const eased = easeOutCubic(hinge);
-
-    if (hingeRef.current) {
-      // Positivo: a borda que abre (lado direito, oposto à lombada em X
-      // negativo) levanta e gira em direção à lombada — abre da direita
-      // pra esquerda, como um livro de verdade.
-      hingeRef.current.rotation.z = eased * MAX_OPEN_ANGLE;
-    }
-    if (shadowRef.current && shadowMaterialRef.current) {
-      const scale = THREE.MathUtils.lerp(0.5, 1.4, eased);
-      shadowRef.current.scale.set(scale, scale * 1.15, 1);
-      shadowMaterialRef.current.opacity = THREE.MathUtils.lerp(0.55, 0.1, eased);
-    }
-  });
-
   return (
     <group>
-      {/* Bloco de páginas — fixo, não gira */}
-      <mesh
-        position={[BOOK_CENTER[0], BOOK_CENTER[1] - 0.02, BOOK_CENTER[2]]}
-        geometry={pageBlockGeometry}
-        castShadow
-        receiveShadow
-      >
+      {/* Bloco de páginas */}
+      <mesh position={[0, -0.02, 0]} geometry={pageBlockGeometry} castShadow receiveShadow>
         <meshStandardMaterial color={PALETTE.parchment} roughness={0.85} />
       </mesh>
 
-      {/* Capa — dobradiça pivotada exatamente na lombada (borda esquerda), não no centro da capa */}
-      <group ref={hingeRef} position={BOOK_SPINE}>
+      {/* Capa — lombada na borda esquerda (X negativo), fechada (sem rotação) */}
+      <group position={[-BOOK_WIDTH / 2, 0, 0]}>
         <mesh position={[BOOK_WIDTH / 2, 0.03, 0]} geometry={coverGeometry} castShadow receiveShadow>
           <meshStandardMaterial color={PALETTE.roseBlush} roughness={0.55} metalness={0.05} />
         </mesh>
@@ -88,19 +48,14 @@ export function BookMesh({ progressRef }: { progressRef: ProgressRef }) {
         </mesh>
       </group>
 
-      {/* Sombra de contato na lombada, sincronizada ao mesmo progresso do hinge */}
-      <mesh
-        ref={shadowRef}
-        position={[BOOK_SPINE[0] + 0.05, TABLE_TOP_Y + 0.001, BOOK_SPINE[2]]}
-        rotation={[-Math.PI / 2, 0, 0]}
-      >
+      {/* Sombra de contato — fixa nos valores de "fechado" (livro nunca abre mais) */}
+      <mesh position={[-BOOK_WIDTH / 2 + 0.05, -0.079, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.5, 0.575, 1]}>
         <planeGeometry args={[BOOK_WIDTH + 0.15, BOOK_DEPTH + 0.2]} />
         <meshBasicMaterial
-          ref={shadowMaterialRef}
           map={shadowTexture}
           color={PALETTE.stageDark}
           transparent
-          opacity={0.5}
+          opacity={0.55}
           depthWrite={false}
         />
       </mesh>

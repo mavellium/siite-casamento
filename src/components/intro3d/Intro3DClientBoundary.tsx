@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { SectionId } from "@/types/section";
 
 /**
  * Único lugar do projeto que chama next/dynamic com ssr:false — só é
@@ -14,12 +15,6 @@ const Intro3DScene = dynamic(() => import("./Intro3DScene").then((mod) => mod.In
   loading: () => <div className="intro3d-placeholder" aria-hidden="true" />,
 });
 
-export function Intro3DClientBoundary({
-  onHandoff,
-  closeSignal,
-}: {
-  onHandoff: (open: boolean) => void;
-  closeSignal?: number;
-}) {
-  return <Intro3DScene onHandoff={onHandoff} closeSignal={closeSignal} />;
+export function Intro3DClientBoundary({ onSelectSection }: { onSelectSection: (id: SectionId) => void }) {
+  return <Intro3DScene onSelectSection={onSelectSection} />;
 }

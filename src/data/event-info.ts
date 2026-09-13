@@ -4,7 +4,7 @@ import type { EventInfoItem } from "@/types/content";
 export const EVENT_INFO: EventInfoItem[] = [
   {
     id: "cerimonia",
-    label: "Capítulo IV",
+    label: "Capítulo VI",
     title: "Cerimônia",
     time: "14 de novembro de 2026 · 16h [a confirmar]",
     address: "Endereço da cerimônia [a confirmar]",
@@ -12,7 +12,7 @@ export const EVENT_INFO: EventInfoItem[] = [
   },
   {
     id: "recepcao",
-    label: "Capítulo V",
+    label: "Capítulo VII",
     title: "Recepção",
     time: "14 de novembro de 2026 · logo após a cerimônia [a confirmar]",
     address: "Endereço da recepção [a confirmar]",

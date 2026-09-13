@@ -260,7 +260,18 @@
 }
 
 .flipbook {
-  filter: drop-shadow(0 40px 90px rgba(0, 0, 0, 0.55));
+  /*
+    Duas sombras, não uma. Uma sombra difusa sozinha faz o livro parecer
+    flutuando acima do palco; o que assenta um objeto numa superfície é a
+    sombra de CONTATO — curta, escura e quase sem desfoque, logo abaixo da
+    borda — somada à sombra ambiente longa. É o mesmo par que o N8AO produz
+    na cena 3D, aqui feito à mão porque o livro 2D é DOM, não geometria.
+
+    Custo: cada drop-shadow é um passe de rasterização da subárvore, e este
+    elemento contém a folha que anima. Por isso ficam só duas camadas — não
+    acrescentar uma terceira sem medir o quadro durante a virada.
+  */
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)) drop-shadow(0 40px 90px rgba(0, 0, 0, 0.5));
   /*
     react-pageflip com autoSize (padrão) reserva a altura do livro via um
     padding-bottom em % calculado da proporção ESTÁTICA das props width/

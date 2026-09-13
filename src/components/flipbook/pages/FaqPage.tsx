@@ -1,4 +1,5 @@
 import type { FaqLeaf } from "@/types/book";
+import { FaqList } from "@/components/sections/FaqList";
 import { PageChrome, OrnamentDivider } from "../PageChrome";
 
 export function FaqPage({ leaf }: { leaf: FaqLeaf }) {
@@ -7,14 +8,7 @@ export function FaqPage({ leaf }: { leaf: FaqLeaf }) {
       <span className="chapter-label">{leaf.chapterLabel}</span>
       <OrnamentDivider />
       <h2 className="page-heading">{leaf.title}</h2>
-      <div className="faq-list">
-        {leaf.items.map((item) => (
-          <details key={item.id} className="faq-item">
-            <summary className="faq-question">{item.question}</summary>
-            <p className="faq-answer">{item.answer}</p>
-          </details>
-        ))}
-      </div>
+      <FaqList items={leaf.items} />
     </PageChrome>
   );
 }
