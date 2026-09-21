@@ -84,7 +84,9 @@ const ANCORA = 0.09;
  *
  * Passo de 0,42 m entre centros. No mergulho final (câmera a 2,55 m, FOV 34)
  * a largura visível é ≈2,43 m, então isso dá ~242 px entre centros — folga
- * confortável para os alvos de clique de 78–86 px.
+ * confortável para os alvos de clique, que hoje têm o tamanho da própria peça
+ * projetada na tela (ver InteractiveObject/LARGURA_MAX_MUNDO, que corta a
+ * largura do alvo em 0,40 m justamente pra caber neste passo).
  *
  * Todos ancorados na MESMA altura (ASSENTO_TOPO_Y + ANCORA): vistos de 42°
  * acima, âncoras em alturas diferentes deslocariam os botões verticalmente na
@@ -105,7 +107,6 @@ function BenchMenu({ onSelectSection }: { onSelectSection: (id: SectionId) => vo
         position={[-0.54, y + ANCORA, z + 0.02]}
         label="Prancheta"
         onSelect={() => onSelectSection("rsvp")}
-        sizePx={78}
       >
         {/*
           Deitada e SEM inclinação. A prancheta é uma tábua apoiada de barriga
@@ -122,7 +123,6 @@ function BenchMenu({ onSelectSection }: { onSelectSection: (id: SectionId) => vo
         position={[-0.12, y + ANCORA, z - 0.03]}
         label="Retrato"
         onSelect={() => onSelectSection("gallery")}
-        sizePx={78}
       >
         {/*
           A única peça que recosta: o pivô do FramedPhoto está na base, então
@@ -138,7 +138,6 @@ function BenchMenu({ onSelectSection }: { onSelectSection: (id: SectionId) => vo
         position={[0.3, y + ANCORA, z]}
         label="Livro"
         onSelect={() => onSelectSection("story")}
-        sizePx={86}
       >
         {/*
           Deitado. A altura vem de APOIO.livro: além de encostar o bloco de
@@ -155,7 +154,6 @@ function BenchMenu({ onSelectSection }: { onSelectSection: (id: SectionId) => vo
         position={[0.72, y + ANCORA, z - 0.02]}
         label="Calendário"
         onSelect={() => onSelectSection("schedule")}
-        sizePx={78}
       >
         {/*
           EM PÉ, a pedido. Ela chegou a ficar deitada de lado porque, vista de
@@ -176,7 +174,6 @@ function BenchMenu({ onSelectSection }: { onSelectSection: (id: SectionId) => vo
         position={[1.14, y + ANCORA, z + 0.01]}
         label="Globo"
         onSelect={() => onSelectSection("location")}
-        sizePx={78}
       >
         {/*
           Em pé e apoiado. Estava com rotação em X e Z — o que TOMBA a peça,

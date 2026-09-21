@@ -48,8 +48,20 @@ export function BookMesh() {
         </mesh>
       </group>
 
-      {/* Sombra de contato — fixa nos valores de "fechado" (livro nunca abre mais) */}
-      <mesh position={[-BOOK_WIDTH / 2 + 0.05, -0.079, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.5, 0.575, 1]}>
+      {/*
+        Sombra de contato — fixa nos valores de "fechado" (livro nunca abre mais).
+
+        foraDoAlvo: este plano se estende ~10 cm à esquerda do livro, e o alvo
+        de clique do menu é medido da caixa envolvente da peça (ver
+        InteractiveObject/medirCaixa). A marca mantém a medição no livro, não
+        na sombra que ele projeta.
+      */}
+      <mesh
+        position={[-BOOK_WIDTH / 2 + 0.05, -0.079, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        scale={[0.5, 0.575, 1]}
+        userData={{ foraDoAlvo: true }}
+      >
         <planeGeometry args={[BOOK_WIDTH + 0.15, BOOK_DEPTH + 0.2]} />
         <meshBasicMaterial
           map={shadowTexture}

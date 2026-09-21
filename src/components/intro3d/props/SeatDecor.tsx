@@ -2,17 +2,22 @@
 
 import { useMemo } from "react";
 import * as THREE from "three";
-import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { QUARTO } from "../palette";
 import { ROOM, ASSENTO_TOPO_Y } from "../roomLayout";
 import { mulberry32 } from "../geometry/random";
-import { usePbrMaterial } from "../textures/usePbrMaterial";
 
 /**
  * O que divide o banco com os cinco objetos do menu: bandeja de palha com
- * xícara, vaso de vidro com mosquitinho, manta de tricô caída na ponta direita
- * e a lanterna âmbar acesa. Tudo isso está na foto de referência — só as
- * almofadas saíram, e foi no lugar delas que os objetos interativos entraram.
+ * xícara, vaso de vidro com mosquitinho e a lanterna âmbar acesa. Tudo isso
+ * está na foto de referência — as almofadas saíram, e foi no lugar delas que
+ * os objetos interativos entraram.
+ *
+ * A MANTA DE TRICÔ TAMBÉM SAIU, a pedido. Eram dois blocos arredondados
+ * na ponta direita (um deitado no assento, outro escorrendo pela frente) e não
+ * lia como tecido: com o relevo de trama fino e a cor de lençol, sob o sol
+ * direto, as duas peças apareciam como DUAS TÁBUAS claras encostadas no canto,
+ * bem ao lado do globo. Se um dia voltar, precisa de silhueta de pano (dobra
+ * irregular, quina caída) — bloco arredondado não resolve.
  *
  * POSIÇÕES: os alvos clicáveis ocupam x de -0,54 a 1,14 (ver BenchMenu em
  * Scene.tsx). Tudo aqui mora fora desse intervalo, nas duas pontas, pra não
@@ -26,7 +31,6 @@ export function SeatDecor() {
     <group>
       <Tray position={[-1.18, y, z + 0.02]} />
       <FlowerVase position={[-1.44, y, z - 0.14]} />
-      <KnitThrow />
       <Lantern position={[1.4, y, z - 0.18]} />
     </group>
   );
@@ -132,68 +136,6 @@ function FlowerVase({ position }: { position: [number, number, number] }) {
           <meshStandardMaterial color={0xfdfaf2} roughness={0.85} />
         </mesh>
       ))}
-    </group>
-  );
-}
-
-/**
- * Manta de tricô caída na ponta direita do banco, escorrendo pela frente.
- *
- * Duas peças: a parte deitada no assento e a que pende. Sem a segunda a manta
- * lê como almofada dobrada — é o pedaço pendurado, quebrando a linha reta do
- * móvel, que diz "manta".
- */
-function KnitThrow() {
-  const geo = useMemo(() => new RoundedBoxGeometry(1, 1, 1, 4, 0.22), []);
-  /*
-    Relevo de trama vindo do denim_fabric. semCor porque o Diffuse dele é
-    azul-marinho e tingir por multiplicação daria cinza sujo — o que interessa
-    é só a trama. Sem relevo nenhum a manta era um bloco liso e, sendo a
-    superfície mais clara sob o sol direto, lia como plástico branco.
-  */
-  const trama = usePbrMaterial("denim_fabric", { repeat: [2.5, 2.5], normalScale: 1.6, semCor: true });
-  const { assento, zFundo } = ROOM;
-  const y = ASSENTO_TOPO_Y;
-  const zCentro = zFundo + assento.profundidade / 2;
-
-  /*
-    x = 1.36, encostada na ponta direita. A primeira versão ficava em x = 1.12,
-    largura 0.56 — exatamente EMBAIXO do Globo (x = 1.14): no mergulho de cima o
-    globo aparecia pousado sobre a manta e os dois viravam uma mancha só.
-    Agora ela ocupa de ~1.23 a ~1.49 e fica na metade da FRENTE do assento; a
-    lanterna mora na metade de trás, encostada no vidro.
-
-    Cor um degrau mais escura que o lençol (0xe0d3bd): era a superfície mais
-    clara do quadro sob o sol direto e estourava.
-  */
-  return (
-    <group>
-      {/* Parte dobrada sobre o assento — baixa e estreita. */}
-      <mesh
-        geometry={geo}
-        position={[1.36, y + 0.022, zCentro + 0.08]}
-        scale={[0.26, 0.044, 0.3]}
-        rotation={[0, 0.1, 0]}
-        castShadow
-        receiveShadow
-      >
-        <meshStandardMaterial {...trama} color={0xe0d3bd} roughness={0.99} metalness={0} />
-      </mesh>
-      {/*
-        A ponta que escorre pela frente do banco, encostada na borda do tampo:
-        é a dobra sobre a quina que faz o tecido parecer tecido. Sem ela a
-        manta lê como almofada dobrada.
-      */}
-      <mesh
-        geometry={geo}
-        position={[1.37, y - 0.13, assento.zFrente - 0.005]}
-        scale={[0.24, 0.36, 0.045]}
-        rotation={[0.04, 0.08, 0.05]}
-        castShadow
-        receiveShadow
-      >
-        <meshStandardMaterial {...trama} color={0xd9ccb4} roughness={0.99} metalness={0} />
-      </mesh>
     </group>
   );
 }
