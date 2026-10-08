@@ -354,7 +354,32 @@ export function Flipbook() {
         </button>
       </div>
 
+      {/*
+        Rodapé de navegação. Três acréscimos em relação à versão anterior
+        (que tinha só o botão de sumário e um contador apagado):
+
+        1. SETAS COMPACTAS. As setas laterais somem em telas ≤640px porque não
+           cabem ao lado do livro — e o celular ficava SEM nenhum botão de
+           navegar, só com arraste. Estas vivem dentro do rodapé, onde cabem,
+           e aparecem exatamente onde as laterais somem.
+        2. NOME DO CAPÍTULO. O componente já calculava `currentLabel`, mas só
+           o entregava a um live region invisível. Dizer "Nossa História" em
+           vez de só "6 de 16" é a diferença entre saber onde se está no livro
+           e saber apenas quantas folhas faltam.
+        3. BARRA DE PROGRESSO, pelo mesmo motivo: posição relativa num livro
+           de 16 folhas se lê muito mais rápido numa barra do que num número.
+      */}
       <div className="flipbook-nav-footer">
+        <button
+          type="button"
+          onClick={goPrev}
+          disabled={!canGoPrev}
+          className="flipbook-step"
+          aria-label="Página anterior"
+        >
+          ‹
+        </button>
+
         <button
           type="button"
           ref={tocTriggerRef}
@@ -367,9 +392,34 @@ export function Flipbook() {
         >
           <BookMarked size={16} aria-hidden="true" /> Sumário
         </button>
-        <p className="page-counter" aria-hidden="true">
-          {pageIndex + 1} de {totalPages}
-        </p>
+
+        {/*
+          aria-hidden: o mesmo conteúdo já é anunciado pelo live region no fim
+          do componente, que avisa a cada virada. Sem isto o leitor de tela
+          leria a posição duas vezes.
+        */}
+        <div className="flipbook-progress" aria-hidden="true">
+          <span className="flipbook-progress-label">{currentLabel}</span>
+          <span className="flipbook-progress-track">
+            <span
+              className="flipbook-progress-fill"
+              style={{ width: `${((pageIndex + 1) / totalPages) * 100}%` }}
+            />
+          </span>
+          <span className="page-counter">
+            {pageIndex + 1} de {totalPages}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={goNext}
+          disabled={!canGoNext}
+          className="flipbook-step"
+          aria-label="Próxima página"
+        >
+          ›
+        </button>
       </div>
 
       <TableOfContents

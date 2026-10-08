@@ -46,18 +46,41 @@ export function RsvpForm() {
         conosco.
       </p>
 
-      <label className="rsvp-field">
-        <span className="rsvp-label">
-          <User size={16} aria-hidden="true" /> Nome completo
-        </span>
-        <input
-          type="text"
-          required
-          className="rsvp-input"
-          value={values.name}
-          onChange={(e) => setValues((v) => ({ ...v, name: e.target.value }))}
-        />
-      </label>
+      {/*
+        Nome e nº de acompanhantes na MESMA linha quando há largura (ver
+        .rsvp-linha em sections.css). São os dois campos curtos do formulário;
+        empilhados, empurravam o botão de enviar pra fora da área visível no
+        painel. Na folha do livro, que é estreita, a regra não se aplica e eles
+        continuam um embaixo do outro.
+      */}
+      <div className="rsvp-linha">
+        <label className="rsvp-field">
+          <span className="rsvp-label">
+            <User size={16} aria-hidden="true" /> Nome completo
+          </span>
+          <input
+            type="text"
+            required
+            className="rsvp-input"
+            value={values.name}
+            onChange={(e) => setValues((v) => ({ ...v, name: e.target.value }))}
+          />
+        </label>
+
+        <label className="rsvp-field">
+          <span className="rsvp-label">
+            <Users size={16} aria-hidden="true" /> Acompanhantes
+          </span>
+          <input
+            type="number"
+            min={1}
+            required
+            className="rsvp-input"
+            value={values.guestCount}
+            onChange={(e) => setValues((v) => ({ ...v, guestCount: Number(e.target.value) }))}
+          />
+        </label>
+      </div>
 
       <div className="rsvp-field">
         <span className="rsvp-label">Você poderá comparecer?</span>
@@ -84,20 +107,6 @@ export function RsvpForm() {
           </label>
         </div>
       </div>
-
-      <label className="rsvp-field">
-        <span className="rsvp-label">
-          <Users size={16} aria-hidden="true" /> Nº de acompanhantes (incluindo você)
-        </span>
-        <input
-          type="number"
-          min={1}
-          required
-          className="rsvp-input"
-          value={values.guestCount}
-          onChange={(e) => setValues((v) => ({ ...v, guestCount: Number(e.target.value) }))}
-        />
-      </label>
 
       <label className="rsvp-field">
         <span className="rsvp-label">

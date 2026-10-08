@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ComponentType } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { CalendarClock, Images, MapPin, PenLine, X } from "lucide-react";
 import { OrnamentDivider } from "@/components/flipbook/PageChrome";
 import { Flipbook } from "@/components/flipbook/Flipbook";
 import type { SectionId } from "@/types/section";
@@ -13,15 +13,49 @@ import { RsvpForm } from "./RsvpForm";
 import { ScheduleOverlay } from "./ScheduleOverlay";
 import { LocationInfo } from "./LocationInfo";
 
-const SECTION_TITLES: Record<SectionId, string> = {
-  gallery: "Retrato",
-  story: "Livro",
-  rsvp: "Confirmação de presença",
-  schedule: "Cronograma",
-  location: "Localização",
+type SecaoSimples = Exclude<SectionId, "story">;
+
+/**
+ * Cabeçalho de cada seção.
+ *
+ * O `kicker` e o `subtitulo` existem porque o título sozinho vinha do NOME DO
+ * OBJETO na cena ("Retrato", "Prancheta") — o que ajuda a ligar o painel à
+ * peça que foi clicada, mas não diz o que a seção faz. O subtítulo responde
+ * isso em uma linha, sem precisar renomear os objetos e perder a ligação.
+ */
+const SECOES: Record<SecaoSimples, {
+  titulo: string;
+  kicker: string;
+  subtitulo: string;
+  Icone: ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
+}> = {
+  gallery: {
+    titulo: "Retrato",
+    kicker: "banco de imagens",
+    subtitulo: "Alguns instantes nossos, até aqui.",
+    Icone: Images,
+  },
+  rsvp: {
+    titulo: "Confirmação de presença",
+    kicker: "prancheta",
+    subtitulo: "Sua resposta nos ajuda a preparar tudo com carinho.",
+    Icone: PenLine,
+  },
+  schedule: {
+    titulo: "Cronograma",
+    kicker: "calendário",
+    subtitulo: "Quanto falta, e a ordem do nosso dia.",
+    Icone: CalendarClock,
+  },
+  location: {
+    titulo: "Localização",
+    kicker: "globo",
+    subtitulo: "Onde vamos celebrar com você.",
+    Icone: MapPin,
+  },
 };
 
-function SectionContent({ section }: { section: Exclude<SectionId, "story"> }) {
+function SectionContent({ section }: { section: SecaoSimples }) {
   switch (section) {
     case "gallery":
       return <GalleryGrid images={GALLERY_IMAGES} />;
@@ -35,16 +69,20 @@ function SectionContent({ section }: { section: Exclude<SectionId, "story"> }) {
 }
 
 /**
- * Modal genérico pras 5 seções abertas a partir dos objetos da mesa 3D —
+ * Modal genérico pras seções abertas a partir dos objetos do banco 3D —
  * mesmo padrão (backdrop + painel + focus-trap + Escape + trava de scroll)
  * já usado/testado em TableOfContents.tsx.
  *
- * "Livro" é um caso à parte: o pedido é o livro de página-virando de
- * sempre (setas, folhear, sumário pra pular direto pra uma parte) — não
- * um resumo em abas. Por isso renderiza o Flipbook de verdade em tela
- * cheia (ele já é pensado pra ocupar 100dvh sozinho, com suas próprias
- * setas/rodapé/sumário) em vez de encaixá-lo dentro do .section-panel
- * menor usado pelas outras 4 seções.
+ * O painel é um grid de duas faixas: cabeçalho FIXO e conteúdo rolável. Antes
+ * o painel inteiro rolava, e em conteúdo alto (galeria, formulário) o título e
+ * o botão de fechar saíam da tela — o usuário perdia a referência e a saída ao
+ * mesmo tempo.
+ *
+ * "Livro" é um caso à parte: o pedido é o livro de página-virando de sempre
+ * (setas, folhear, sumário pra pular direto pra uma parte) — não um resumo em
+ * abas. Por isso renderiza o Flipbook de verdade em tela cheia (ele já é
+ * pensado pra ocupar 100dvh sozinho, com suas próprias setas/rodapé/sumário)
+ * em vez de encaixá-lo dentro do painel menor usado pelas outras seções.
  */
 export function SectionOverlay({ section, onClose }: { section: SectionId | null; onClose: () => void }) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -87,9 +125,10 @@ export function SectionOverlay({ section, onClose }: { section: SectionId | null
           type="button"
           className="section-story-close"
           onClick={onClose}
-          aria-label="Fechar e voltar pra mesa"
+          aria-label="Fechar e voltar pro quarto"
         >
-          <X size={20} aria-hidden="true" />
+          <X size={18} aria-hidden="true" />
+          <span className="section-story-close-label">Fechar</span>
         </button>
         <Flipbook />
       </div>,
@@ -97,13 +136,21 @@ export function SectionOverlay({ section, onClose }: { section: SectionId | null
     );
   }
 
+  const { titulo, kicker, subtitulo, Icone } = SECOES[section];
+
+  /*
+    createPortal pro body, igual ao ramo do livro: a cena 3D tem ancestrais
+    com `transform` (o palco é sticky), e dentro de um ancestral transformado
+    o `position: fixed` passa a se ancorar NELE, não na janela — o backdrop
+    deixaria de cobrir a tela.
+  */
   return createPortal(
     <div className="section-backdrop" onClick={onClose}>
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label={SECTION_TITLES[section]}
+        aria-label={titulo}
         className="section-panel"
         onClick={(event) => event.stopPropagation()}
       >
@@ -112,12 +159,19 @@ export function SectionOverlay({ section, onClose }: { section: SectionId | null
         <span className="leaf-corner leaf-corner-bl" />
         <span className="leaf-corner leaf-corner-br" />
 
-        <button type="button" className="toc-close" onClick={onClose} aria-label="Fechar e voltar pra mesa">
-          <X size={18} aria-hidden="true" />
-        </button>
+        <header className="section-header">
+          <button type="button" className="toc-close" onClick={onClose} aria-label="Fechar e voltar pro quarto">
+            <X size={18} aria-hidden="true" />
+          </button>
 
-        <h2 className="toc-heading">{SECTION_TITLES[section]}</h2>
-        <OrnamentDivider />
+          <p className="section-kicker">
+            <Icone size={13} aria-hidden={true} />
+            {kicker}
+          </p>
+          <h2 className="toc-heading">{titulo}</h2>
+          <p className="section-subtitle">{subtitulo}</p>
+          <OrnamentDivider />
+        </header>
 
         <div className="section-panel-content">
           <SectionContent section={section} />

@@ -1,16 +1,21 @@
 "use client";
 
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { QUARTO } from "../palette";
 import { ROOM, ASSENTO_TOPO_Y } from "../roomLayout";
 import { mulberry32 } from "../geometry/random";
 
 /**
- * O que divide o banco com os cinco objetos do menu: bandeja de palha com
- * xícara, vaso de vidro com mosquitinho e a lanterna âmbar acesa. Tudo isso
- * está na foto de referência — as almofadas saíram, e foi no lugar delas que
- * os objetos interativos entraram.
+ * O que divide o banco com os cinco objetos do menu: o conjunto de café
+ * (xícara no pratinho, com vapor, e a garrafa térmica ao lado), o vaso de
+ * vidro com mosquitinho e a lanterna âmbar acesa. As almofadas da foto de
+ * referência saíram, e foi no lugar delas que os objetos interativos entraram.
+ *
+ * A BANDEJA DE PALHA COM XÍCARA virou o conjunto de café a pedido: do
+ * enquadramento da cena ela lia como VELA — a xícara era um cilindro branco
+ * liso e o aro da bandeja, visto por trás dela, fazia as vezes de castiçal.
  *
  * A MANTA DE TRICÔ TAMBÉM SAIU, a pedido. Eram dois blocos arredondados
  * na ponta direita (um deitado no assento, outro escorrendo pela frente) e não
@@ -29,40 +34,204 @@ export function SeatDecor() {
 
   return (
     <group>
-      <Tray position={[-1.18, y, z + 0.02]} />
+      <CoffeeSet position={[-1.12, y, z + 0.05]} />
+      <CoffeePot position={[-0.86, y, z - 0.08]} />
       <FlowerVase position={[-1.44, y, z - 0.14]} />
       <Lantern position={[1.4, y, z - 0.18]} />
     </group>
   );
 }
 
-/** Bandeja de palha com uma xícara — o canto de café da foto. */
-function Tray({ position }: { position: [number, number, number] }) {
+/**
+ * Conjunto de café: xícara com alça sobre pratinho, com vapor subindo.
+ *
+ * SUBSTITUIU uma bandeja de palha com uma xícara. O que havia ali lia como
+ * VELA, não como café: a xícara era um cilindro branco liso sem alça, e o aro
+ * da bandeja passando atrás dela virava um castiçal. Alça, pratinho, café
+ * visível e vapor são justamente os sinais que dizem "xícara" à primeira
+ * vista.
+ */
+function CoffeeSet({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
-      {/* Fundo da bandeja */}
-      <mesh position={[0, 0.008, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.115, 0.105, 0.016, 24]} />
-        <meshStandardMaterial color={0xc2a274} roughness={0.92} metalness={0} />
+      {/* Pratinho: tronco de cone bem raso, mais largo em cima. */}
+      <mesh position={[0, 0.005, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.068, 0.052, 0.01, 28]} />
+        <meshStandardMaterial color={0xf6f2ea} roughness={0.28} metalness={0.02} />
       </mesh>
-      {/* Borda — anel fino, é ele que diz "bandeja" e não "disco" */}
-      <mesh position={[0, 0.025, 0]} castShadow>
-        <torusGeometry args={[0.112, 0.011, 8, 24]} />
-        <meshStandardMaterial color={0xb08f60} roughness={0.9} metalness={0} />
+      {/* Anel da borda — é ele que diferencia pratinho de disco. */}
+      <mesh position={[0, 0.011, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <torusGeometry args={[0.06, 0.004, 8, 28]} />
+        <meshStandardMaterial color={0xeee9df} roughness={0.3} metalness={0.02} />
       </mesh>
-      {/* Xícara */}
-      <mesh position={[0.02, 0.05, 0.01]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.037, 0.03, 0.055, 18]} />
-        <meshStandardMaterial color={0xf4f0e8} roughness={0.35} metalness={0.02} />
+
+      {/* Corpo da xícara, aberto em cima pra se ver o café dentro. */}
+      <mesh position={[0, 0.043, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.038, 0.029, 0.058, 24, 1, true]} />
+        <meshStandardMaterial color={0xfbf8f2} roughness={0.22} metalness={0.02} side={THREE.DoubleSide} />
       </mesh>
-      {/* Café dentro — some quase todo, mas sem ele a xícara lê como copo vazio de plástico */}
-      <mesh position={[0.02, 0.077, 0.01]}>
-        <circleGeometry args={[0.033, 18]} />
-        <meshStandardMaterial color={0x3a2317} roughness={0.25} />
+      {/* Fundo da xícara (o corpo é openEnded e vazaria por baixo). */}
+      <mesh position={[0, 0.015, 0]}>
+        <cylinderGeometry args={[0.029, 0.029, 0.004, 24]} />
+        <meshStandardMaterial color={0xfbf8f2} roughness={0.25} />
       </mesh>
-      <mesh position={[0.062, 0.05, 0.01]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <torusGeometry args={[0.019, 0.005, 6, 14, Math.PI]} />
-        <meshStandardMaterial color={0xf4f0e8} roughness={0.35} />
+      {/* Café quase na borda, bem brilhante: é o reflexo na superfície do
+          líquido que faz ler como cheia, não como xícara vazia e escura. */}
+      <mesh position={[0, 0.062, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.0355, 24]} />
+        <meshStandardMaterial color={0x24150c} roughness={0.12} metalness={0.05} />
+      </mesh>
+      {/* Alça */}
+      <mesh position={[0.045, 0.045, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <torusGeometry args={[0.019, 0.005, 8, 18, Math.PI * 1.15]} />
+        <meshStandardMaterial color={0xfbf8f2} roughness={0.25} metalness={0.02} />
+      </mesh>
+
+      <Steam origem={[0, 0.07, 0]} />
+    </group>
+  );
+}
+
+/** Quantos sopros de vapor. 16 dá continuidade sem virar nuvem. */
+const QTD_VAPOR = 16;
+
+/**
+ * Vapor subindo do café.
+ *
+ * Um InstancedMesh de bolhas translúcidas em ciclo: cada uma nasce rente ao
+ * líquido, sobe, cresce e some. As fases são espalhadas por índice, então o
+ * fluxo é contínuo e nunca "pulsa" todo junto.
+ *
+ * BLENDING ADITIVO não é escolha estética, é o que permite o FADE: a
+ * opacidade do three é por material, não por instância, e com mistura aditiva
+ * a cor de cada instância (instanceColor) vira o próprio controle de
+ * intensidade — escuro some, claro aparece. Com mistura normal, escurecer a
+ * cor daria fumaça CINZA em vez de fumaça sumindo.
+ *
+ * Os valores ficam baixos de propósito (pico ~0,35 × 0,5 de opacidade): vapor
+ * de café é um véu que mal se vê, e aditivo forte sobre o banco claro viraria
+ * um borrão leitoso. Também fica abaixo do limiar do Bloom (1.0), senão o
+ * vapor floresceria como se fosse fonte de luz.
+ */
+function Steam({ origem }: { origem: [number, number, number] }) {
+  const malhaRef = useRef<THREE.InstancedMesh>(null);
+
+  const fases = useMemo(() => {
+    const rnd = mulberry32(5150);
+    return Array.from({ length: QTD_VAPOR }, (_, i) => ({
+      // Ciclo espalhado por índice (fluxo contínuo); giro desencontra o balanço.
+      inicio: i / QTD_VAPOR,
+      giro: rnd() * Math.PI * 2,
+      velocidade: 0.8 + rnd() * 0.5,
+    }));
+  }, []);
+
+  useLayoutEffect(() => {
+    const malha = malhaRef.current;
+    if (!malha) return;
+    // As instâncias se movem todo quadro; um volume calculado uma vez só
+    // ficaria errado e o vapor sumiria por frustum culling em certos ângulos.
+    malha.frustumCulled = false;
+
+    /*
+      Semear instanceColor aqui é OBRIGATÓRIO, não higiene: o atributo não
+      existe até a primeira chamada de setColorAt. Como o useFrame abaixo
+      depende dele e desiste quando é nulo, sem esta semeadura ele desistiria
+      PARA SEMPRE e não haveria vapor nenhum.
+    */
+    const preto = new THREE.Color(0, 0, 0);
+    for (let i = 0; i < QTD_VAPOR; i++) malha.setColorAt(i, preto);
+    if (malha.instanceColor) malha.instanceColor.needsUpdate = true;
+  }, []);
+
+  /*
+    eslint-disable react-hooks/immutability -- padrão canônico do R3F, o mesmo
+    de CameraRig e FairyLights: useFrame roda fora do ciclo de render do React
+    e mutar objetos three.js dentro dele é a forma documentada de animar.
+  */
+  useFrame((state) => {
+    const malha = malhaRef.current;
+    const atributoCor = malha?.instanceColor;
+    if (!malha || !atributoCor) return;
+
+    const t = state.clock.elapsedTime;
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const p = new THREE.Vector3();
+    const e = new THREE.Vector3();
+    const cor = new THREE.Color();
+
+    for (let i = 0; i < QTD_VAPOR; i++) {
+      const f = fases[i];
+      const u = (t * 0.17 * f.velocidade + f.inicio) % 1;
+
+      // Sobe ~16 cm, serpenteando cada vez mais à medida que esfria.
+      const altura = u * 0.16;
+      const desvio = Math.sin(u * 5.5 + f.giro) * 0.014 * u;
+      const desvioZ = Math.cos(u * 4.2 + f.giro * 1.7) * 0.012 * u;
+      p.set(origem[0] + desvio, origem[1] + altura, origem[2] + desvioZ);
+
+      // Nasce apertado na superfície e se abre ao subir.
+      e.setScalar(0.005 + u * 0.026);
+      malha.setMatrixAt(i, m.compose(p, q, e));
+
+      // Aparece e some suave: meia onda de seno ao longo do ciclo.
+      const brilho = Math.sin(Math.PI * u) * 0.35;
+      cor.setRGB(brilho, brilho * 0.97, brilho * 0.93);
+      malha.setColorAt(i, cor);
+    }
+
+    malha.instanceMatrix.needsUpdate = true;
+    atributoCor.needsUpdate = true;
+  });
+  /* eslint-enable react-hooks/immutability */
+
+  return (
+    <instancedMesh ref={malhaRef} args={[undefined, undefined, QTD_VAPOR]}>
+      <sphereGeometry args={[1, 7, 5]} />
+      <meshBasicMaterial transparent opacity={0.5} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </instancedMesh>
+  );
+}
+
+/**
+ * Garrafa térmica de café ao lado da xícara.
+ *
+ * Esmalte creme com ferragens de latão, pra conversar com os puxadores das
+ * gavetas e a lanterna do outro extremo do banco, em vez de introduzir um
+ * material novo (inox) que não existe em lugar nenhum do quarto.
+ */
+function CoffeePot({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position} rotation={[0, -0.4, 0]}>
+      {/* Corpo, levemente mais largo embaixo */}
+      <mesh position={[0, 0.082, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.042, 0.048, 0.164, 28]} />
+        <meshStandardMaterial color={0xf0e7d7} roughness={0.35} metalness={0.05} />
+      </mesh>
+      {/* Friso de latão na barriga — quebra o cilindro liso */}
+      <mesh position={[0, 0.055, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.0465, 0.0028, 8, 28]} />
+        <meshStandardMaterial color={QUARTO.latao} roughness={0.35} metalness={0.7} />
+      </mesh>
+      {/* Tampa e pegador */}
+      <mesh position={[0, 0.172, 0]} castShadow>
+        <cylinderGeometry args={[0.044, 0.043, 0.018, 28]} />
+        <meshStandardMaterial color={QUARTO.latao} roughness={0.4} metalness={0.65} />
+      </mesh>
+      <mesh position={[0, 0.188, 0]} castShadow>
+        <sphereGeometry args={[0.012, 14, 10]} />
+        <meshStandardMaterial color={QUARTO.latao} roughness={0.35} metalness={0.7} />
+      </mesh>
+      {/* Bico, inclinado pra frente */}
+      <mesh position={[0.05, 0.15, 0]} rotation={[0, 0, -0.9]} castShadow>
+        <cylinderGeometry args={[0.009, 0.014, 0.05, 14]} />
+        <meshStandardMaterial color={0xf0e7d7} roughness={0.35} metalness={0.05} />
+      </mesh>
+      {/* Asa */}
+      <mesh position={[-0.055, 0.1, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <torusGeometry args={[0.028, 0.006, 8, 18, Math.PI * 1.1]} />
+        <meshStandardMaterial color={QUARTO.latao} roughness={0.4} metalness={0.6} />
       </mesh>
     </group>
   );

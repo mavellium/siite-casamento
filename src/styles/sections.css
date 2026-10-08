@@ -1,99 +1,440 @@
 /*
-  Overlay genérico das 5 seções abertas a partir dos objetos da mesa 3D
-  (ver SectionOverlay.tsx) — mesmo padrão visual/estrutural de
-  .toc-backdrop/.toc-panel (book.css), mas mais largo (hospeda conteúdo
-  mais variado: grade de galeria, formulário, abas da história) e com seu
-  próprio container-query context (as classes reaproveitadas de book.css
-  como .rsvp-form/.countdown-value usam cqw/cqh, que só resolvem dentro de
-  um ancestral com container-type — antes só existia em .leaf).
+  Interface das 5 seções abertas a partir dos objetos do banco 3D
+  (ver SectionOverlay.tsx).
+
+  ESTRUTURA: o painel é um grid de duas faixas — cabeçalho fixo e conteúdo
+  rolável. Antes o painel inteiro rolava junto, e em conteúdo alto (galeria,
+  RSVP) o título e o botão de fechar subiam pra fora da tela: o usuário perdia
+  tanto a referência de onde está quanto a saída.
+
+  ESCOPO: as regras de conteúdo aqui são todas prefixadas com
+  .section-panel-content. As classes de conteúdo (.gallery-grid, .countdown-*,
+  .rsvp-*) são COMPARTILHADAS com as folhas do livro, que são muito menores —
+  o que é confortável num painel de 44rem estoura uma folha. Prefixar mantém o
+  livro intacto.
 */
 .section-backdrop {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(36, 31, 27, 0.72);
-  backdrop-filter: blur(2px);
+  /* Radial em vez de chapado: o quarto dourado continua visível nas bordas,
+     então o painel lê como algo pousado na cena, não como outra página. */
+  background: radial-gradient(ellipse at 50% 42%, rgba(36, 31, 27, 0.58), rgba(36, 31, 27, 0.86));
+  backdrop-filter: blur(7px) saturate(0.92);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: clamp(1rem, 4vw, 3rem);
+  animation: section-backdrop-in 0.25s ease both;
 }
 
 .section-panel {
   position: relative;
-  width: min(40rem, 100%);
-  max-height: 85dvh;
-  overflow-y: auto;
+  width: min(44rem, 100%);
+  max-height: min(86dvh, 46rem);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   background: var(--parchment);
-  border: 1px solid rgba(var(--seal-rgb), 0.55);
-  padding: clamp(1.75rem, 5vw, 2.5rem);
+  border: 1px solid rgba(var(--seal-rgb), 0.5);
+  /* Sombra funda + fio de luz interno: é o que dá espessura de papel ao
+     cartão. Sem isso ele lê como um retângulo recortado no fundo. */
+  box-shadow: 0 2.25rem 4.5rem rgba(0, 0, 0, 0.55), 0 0.5rem 1.25rem rgba(0, 0, 0, 0.3);
+  outline: 1px solid rgba(255, 255, 255, 0.38);
+  outline-offset: -5px;
+  animation: section-panel-in 0.28s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+/*
+  Véu na base do painel: o conteúdo some em degradê ao passar por baixo, em
+  vez de ser cortado numa linha reta. Como vai do parchment ao transparente
+  sobre o próprio parchment, é invisível quando o conteúdo não chega lá.
+*/
+.section-panel::after {
+  content: "";
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  bottom: 1px;
+  height: 2.75rem;
+  background: linear-gradient(to top, var(--parchment), rgba(246, 240, 228, 0));
+  pointer-events: none;
+}
+
+.section-header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.1rem;
-  animation: toc-panel-in 0.22s ease;
+  gap: 0.3rem;
+  padding: clamp(1.6rem, 4vw, 2.2rem) clamp(1.5rem, 5vw, 2.5rem) 0.85rem;
+}
+
+.section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(var(--seal-rgb), 0.95);
+}
+
+.section-subtitle {
+  max-width: 32rem;
+  margin: 0;
+  text-align: center;
+  font-size: 0.88rem;
+  font-style: italic;
+  line-height: 1.6;
+  color: rgba(var(--sepia-rgb), 0.72);
 }
 
 .section-panel-content {
-  width: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   container-type: inline-size;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.1rem;
+  gap: 1.15rem;
+  padding: 0.35rem clamp(1.5rem, 5vw, 2.5rem) clamp(1.6rem, 4vw, 2.2rem);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--seal-rgb), 0.45) transparent;
 }
 
 /*
-  Livro — não é um resumo em abas, é o Flipbook de página-virando de
-  sempre (setas, folhear, sumário), só que aberto em tela cheia por cima
-  da mesa em vez de ser a página inteira (ver SectionOverlay.tsx). Sem
-  .section-backdrop/.section-panel: o Flipbook já cuida do próprio layout
-  de 100dvh sozinho.
+  Celular: o cartão centralizado vira FOLHA presa embaixo. Num telefone o
+  cartão flutuante desperdiça as bordas e põe o conteúdo longe do polegar; a
+  folha usa a tela toda e o botão de fechar fica alcançável.
+*/
+@media (max-width: 640px) {
+  .section-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .section-panel {
+    width: 100%;
+    max-height: 92dvh;
+    border-width: 1px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    animation-name: section-sheet-in;
+  }
+}
+
+@keyframes section-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes section-panel-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes section-sheet-in {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-backdrop,
+  .section-panel {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------- Livro */
+
+/*
+  Livro — não é um resumo em abas, é o Flipbook de página-virando de sempre
+  (setas, folhear, sumário), só que aberto em tela cheia por cima do quarto.
+  Sem .section-backdrop/.section-panel: o Flipbook cuida do próprio layout de
+  100dvh sozinho.
 */
 .section-story-fullscreen {
   position: fixed;
   inset: 0;
   z-index: 60;
   background: var(--stage-dark);
-  animation: toc-panel-in 0.22s ease;
+  animation: section-backdrop-in 0.25s ease both;
 }
 
 .section-story-close {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: clamp(0.75rem, 2vh, 1.25rem);
+  right: clamp(0.75rem, 2vw, 1.25rem);
   z-index: 1;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 44px;
+  gap: 0.5rem;
   min-height: 44px;
+  padding: 0 0.95rem;
   border-radius: 999px;
   border: 1px solid rgba(var(--seal-rgb), 0.4);
-  background: rgba(246, 240, 228, 0.06);
+  background: rgba(36, 31, 27, 0.55);
+  backdrop-filter: blur(4px);
   color: var(--seal);
-  transition: background 0.2s ease;
+  font-family: var(--font-cormorant), serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .section-story-close:hover {
-  background: rgba(var(--seal-rgb), 0.16);
+  background: var(--seal);
+  color: var(--stage-dark);
 }
 
-.section-schedule-title {
-  margin-bottom: 0.5rem;
-  text-align: center;
+/* O rótulo só cabe em tela larga; no celular fica o X sozinho. */
+.section-story-close-label {
+  display: none;
 }
 
-/* Calendário/Timer — contagem regressiva + horários */
+@media (min-width: 641px) {
+  .section-story-close-label {
+    display: inline;
+  }
+}
+
+/* ------------------------------------------------------- Marca a confirmar */
+
+/*
+  Os textos do casal ainda trazem "[a confirmar]" no fim (ver data/*.ts).
+  Renderizado cru, isso lê como bug. Como selo, lê como decisão — e continua
+  sinalizando honestamente que o dado não está fechado.
+*/
+.tag-confirmar {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid rgba(var(--seal-rgb), 0.45);
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-style: normal;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(var(--seal-rgb), 0.95);
+  background: rgba(var(--seal-rgb), 0.08);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- Cronograma */
+
 .section-schedule {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.35rem;
 }
 
-.section-schedule-item {
-  width: 100%;
+.section-schedule-date {
+  font-family: var(--font-tangerine), serif;
+  font-size: clamp(1.9rem, 7cqw, 2.6rem);
+  line-height: 1;
+  color: var(--sepia);
   text-align: center;
+}
+
+/* Cada bloco (Cerimônia / Recepção) vira um cartão, não um parágrafo solto. */
+.section-event {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1rem 1.15rem;
+  text-align: left;
+  border: 1px solid rgba(var(--sage-deep-rgb), 0.22);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.section-event-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--sage-deep);
+}
+
+.section-event-head svg {
+  flex: none;
+  color: var(--seal);
+}
+
+.section-event-title {
+  font-family: var(--font-cormorant), serif;
+  font-size: 1.15rem;
+  color: var(--sage-deep);
+}
+
+/* --------------------------------------------------------------- Local */
+
+.section-local {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  text-align: center;
+}
+
+.section-local-venue {
+  font-family: var(--font-cormorant), serif;
+  font-size: clamp(1.25rem, 5cqw, 1.6rem);
+  color: var(--sage-deep);
+}
+
+.section-local-address {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  color: var(--sepia);
+  font-size: 0.95rem;
+}
+
+.section-local-address svg {
+  flex: none;
+  color: var(--seal);
+}
+
+.section-panel-content .location-map {
+  height: clamp(12rem, 34cqw, 17rem);
+}
+
+/*
+  Estado "ainda não temos endereço". Enquanto LOCATION.mapEmbedUrl estiver
+  vazio (ver data/location.ts) é isto que aparece, e tem que parecer
+  intencional — não um mapa quebrado.
+*/
+.section-local-pendente {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.6rem 1.25rem;
+  border: 1px dashed rgba(var(--sage-deep-rgb), 0.35);
+  background: rgba(183, 199, 163, 0.1);
+  color: var(--sage-deep);
+}
+
+.section-local-pendente svg {
+  color: rgba(var(--seal-rgb), 0.9);
+}
+
+.section-local-pendente-texto {
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Botão de rota — só renderizado quando há endereço de verdade. */
+.section-local-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1.2rem;
+  border: 1px solid var(--seal);
+  color: var(--seal);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.section-local-cta:hover {
+  background: var(--seal);
+  color: var(--stage-dark);
+}
+
+/* ------------------------------------------- Ajustes de conteúdo no painel */
+
+/*
+  Galeria. A grade do livro usa colunas de 4,5rem — medida pensada pra uma
+  folha estreita. Num painel de 44rem aquilo virava uma parede de miniaturas
+  de ~4rem; aqui as fotos têm tamanho de foto.
+*/
+.section-panel-content .gallery-grid {
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.85rem;
+}
+
+.section-panel-content .gallery-item {
+  overflow: hidden;
+  gap: 0.4rem;
+}
+
+.section-panel-content .gallery-image {
+  aspect-ratio: 4 / 5;
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.section-panel-content .gallery-item:hover .gallery-image {
+  transform: scale(1.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-panel-content .gallery-image {
+    transition: none;
+  }
+}
+
+/* Contagem regressiva: no painel há espaço pros números serem o assunto. */
+.section-panel-content .countdown-tile {
+  padding: 1rem 0.5rem;
+  gap: 0.35rem;
+}
+
+.section-panel-content .countdown-value {
+  font-size: clamp(1.7rem, 7cqw, 2.5rem);
+}
+
+.section-panel-content .countdown-label {
+  font-size: 0.68rem;
+}
+
+/*
+  RSVP: nome e nº de acompanhantes lado a lado quando há largura. O container
+  é o .section-panel-content, então a folha do livro (estreita) nunca entra
+  nesta regra e continua em coluna única.
+*/
+@container (min-width: 30rem) {
+  .section-panel-content .rsvp-linha {
+    display: grid;
+    grid-template-columns: 1fr 10rem;
+    gap: 0.9rem;
+    align-items: end;
+  }
+}
+
+.section-panel-content .rsvp-button {
+  align-self: stretch;
+  justify-content: center;
+}
+
+/*
+  Capitular. As folhas do livro abrem o parágrafo com uma letra grande
+  (.page-text::first-letter em book.css) — é a linguagem do livro. Nos painéis
+  de seção o mesmo parágrafo aparecia com um "A" enorme solto no meio de um
+  cartão informativo, sem relação nenhuma com o resto. Aqui o texto é texto.
+*/
+.section-panel-content .page-text::first-letter {
+  all: unset;
+}
+
+/* Pino e endereço na MESMA linha. O preflight do Tailwind põe display:block
+   em svg, então sem isto o ícone cai sozinho numa linha acima do texto. */
+.section-event .event-info-address {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.section-event .event-info-address svg {
+  flex: none;
+  color: var(--seal);
 }
